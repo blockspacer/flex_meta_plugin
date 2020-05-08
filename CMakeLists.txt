@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION 3.4)
 
 # project() must be before checks, see https://stackoverflow.com/a/26437667/10904212
-set(PROJECT_NAME "flex_meta_plugin")
+set(PROJECT_NAME "flex_meta_demo")
 set(PROJECT_VERSION 1.0.0.1)
 project(${PROJECT_NAME}
   VERSION ${PROJECT_VERSION}
@@ -145,6 +145,98 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
+list(APPEND CMAKE_PROGRAM_PATH ${CONAN_BIN_DIRS})
+# TODO: make better: link lib dirs
+link_directories(${CONAN_LIB_DIRS})
+include(HelperFlextool) # requires list(APPEND CMAKE_PROGRAM_PATH ${CONAN_BIN_DIRS})
+set(flex_reflect_plugin
+  ${CONAN_FLEX_REFLECT_PLUGIN_ROOT}/lib/flex_reflect_plugin${CMAKE_SHARED_LIBRARY_SUFFIX}
+)
+message(STATUS "flex_reflect_plugin=${flex_reflect_plugin}")
+set(flex_meta_plugin
+  ${CONAN_FLEX_META_PLUGIN_ROOT}/lib/flex_meta_plugin${CMAKE_SHARED_LIBRARY_SUFFIX}
+)
+message(STATUS "flex_meta_plugin=${flex_meta_plugin}")
+set(cling_includes
+  ${CONAN_CLING_CONAN_ROOT}/include
+)
+message(STATUS "cling_includes=${cling_includes}")
+set(clang_includes
+  ${CONAN_CLING_CONAN_ROOT}/lib/clang/5.0.0/include
+)
+message(STATUS "clang_includes=${clang_includes}")
+set(flex_support_headers
+  ${CONAN_FLEX_SUPPORT_HEADERS_ROOT}/include/flex/cling_preloader.inc
+)
+message(STATUS "flex_support_headers=${flex_support_headers}")
+set(flexlib_headers
+  ${CONAN_FLEXLIB_ROOT}/include
+)
+message(STATUS "flexlib_headers=${flexlib_headers}")
+set(basis_headers
+  ${CONAN_BASIS_ROOT}/include
+)
+message(STATUS "basis_headers=${basis_headers}")
+set(chromium_base_headers
+  ${CONAN_CHROMIUM_BASE_ROOT}/include
+)
+message(STATUS "chromium_base_headers=${chromium_base_headers}")
+set(chromium_build_util_headers
+  ${CONAN_CHROMIUM_BUILD_UTIL_ROOT}/include/chromium
+)
+message(STATUS "chromium_build_util_headers=${chromium_build_util_headers}")
+set(flextool_input_files ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cc)
+set(flextool_outdir ${CMAKE_BINARY_DIR})
+message(STATUS "flextool_outdir=${flextool_outdir}")
+# requires set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+execute_process(
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${CMAKE_BINARY_DIR}/compile_commands.json
+          ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# TODO: HACK: first run may produce errors
+# second run must be fine if compile_commands.json generated fine
+#
+# requires existing compile_commands.json so
+# must be run before build, but after configure step
+execute_process(
+  COMMAND ${flextool}
+          --srcdir=${CMAKE_CURRENT_SOURCE_DIR}
+          # outdir can contain `compile_commands.json`.
+          # To create compile_commands.json
+          # set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+          # or
+          # set_target_properties(... ENABLE_EXPORTS 1)
+          # see https://releases.llvm.org/9.0.0/tools/clang/docs/LibTooling.html
+          # NOTE: Cling does not support compile_commands.json
+          --outdir=${flextool_outdir}
+          --load_plugin ${flex_reflect_plugin}
+          --load_plugin ${flex_meta_plugin}
+          -extra-arg=-I${cling_includes}
+          -extra-arg=-I${clang_includes}
+          # NOTE: Cling does not support compile_commands.json
+          # so we must add headers used by `flex_support_headers` package
+          # place into `flex_support_headers` includes that can be used by Cling
+          -extra-arg=-I${chromium_base_headers}
+          -extra-arg=-I${chromium_build_util_headers}
+          -extra-arg=-I${basis_headers}
+          -extra-arg=-I${flexlib_headers}
+          -extra-arg=-Wno-undefined-inline
+          # NOTE: we provide compile_commands.json to flextool
+          # with information about project specific include dirs and defines
+          # so you don't need to provide `-D` or `-I` arguments to flextool `by hand`
+          ${flextool_extra_args}
+          ${flextool_input_files}
+          --cling_scripts=${flex_support_headers}
+          #TIMEOUT 7200 # sec
+  RESULT_VARIABLE retcode
+  ERROR_VARIABLE _ERROR_VARIABLE)
+if(NOT "${retcode}" STREQUAL "0")
+  message(FATAL_ERROR "Bad exit status ${retcode} ${_ERROR_VARIABLE}")
+endif()
+message(STATUS "flextool output: ${retcode} ${_ERROR_VARIABLE}")
+
 # Generate clang compilation database
 # see https://stackoverflow.com/a/31086619/10904212
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -229,8 +321,8 @@ message(STATUS "CMAKE_DL_LIBS = ${CMAKE_DL_LIBS}")
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/)
 
-set(flex_meta_plugin_include_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/flex_meta_plugin")
-set(flex_meta_plugin_src_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
+set(flex_meta_demo_include_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/flex_meta_demo")
+set(flex_meta_demo_src_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
 include(cmake/PlatformChecks)
 
@@ -254,13 +346,61 @@ endmacro(add_relative_include_dir)
 # NOTE: cling does not support static libs, so we use SHARED
 # https://github.com/root-project/cling/issues/280
 # https://gitlab.kitware.com/cmake/cmake/issues/16473
-add_library(${LIB_NAME} ${CORE_LIB_TYPE}
-  ${flex_meta_plugin_SOURCES}
+add_executable(${LIB_NAME} #${CORE_LIB_TYPE}
+  ${flex_meta_demo_SOURCES}
 )
 
-#add_relative_include_dir(${LIB_NAME} PRIVATE PRIVATE "include/flex_meta_plugin")
+# This is the second signature of add_custom_command
+# which adds a custom command to a target such as a library or executable.
+# This is useful for performing an operation before or after building the target.
+# The command becomes part of the target and
+# will only execute when the target itself is built.
+# If the target is already built, the command will not execute
+add_custom_command(TARGET ${LIB_NAME}
+    # On Visual Studio Generators, run before any other rules are executed within the target. On other generators, run just before PRE_LINK commands
+    PRE_BUILD
+    COMMAND ${flextool}
+            --srcdir=${CMAKE_CURRENT_SOURCE_DIR}
+            # outdir can contain `compile_commands.json`.
+            # To create compile_commands.json
+            # set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+            # or
+            # set_target_properties(... ENABLE_EXPORTS 1)
+            # see https://releases.llvm.org/9.0.0/tools/clang/docs/LibTooling.html
+            # NOTE: Cling does not support compile_commands.json
+            --outdir=${flextool_outdir}
+            --load_plugin ${flex_reflect_plugin}
+            --load_plugin ${flex_meta_plugin}
+            -extra-arg=-I${cling_includes}
+            -extra-arg=-I${clang_includes}
+            # NOTE: Cling does not support compile_commands.json
+            # so we must add headers used by `flex_support_headers` package
+            # place into `flex_support_headers` includes that can be used by Cling
+            -extra-arg=-I${chromium_base_headers}
+            -extra-arg=-I${chromium_build_util_headers}
+            -extra-arg=-I${basis_headers}
+            -extra-arg=-I${flexlib_headers}
+            -extra-arg=-Wno-undefined-inline
+            # NOTE: we provide compile_commands.json to flextool
+            # with information about project specific include dirs and defines
+            # so you don't need to provide `-D` or `-I` arguments to flextool `by hand`
+            ${flextool_extra_args}
+            ${flextool_input_files}
+            --cling_scripts=${flex_support_headers}
+    COMMENT "running ${flextool}"
+    VERBATIM # to support \t for example
+)
 
 add_relative_include_dir(${LIB_NAME} PUBLIC PUBLIC "include")
+add_relative_include_dir(${LIB_NAME} PUBLIC PUBLIC "src")
+# NOTE: we provide compile_commands.json to flextool
+# with information about project specific include dirs and defines
+# so you don't need to provide `-D` or `-I` arguments to flextool `by hand`
+add_relative_include_dir(${LIB_NAME} PUBLIC PUBLIC "src/project_specific_headers")
+
+#target_include_directories(${LIB_NAME} PRIVATE
+#  ${CMAKE_CURRENT_SOURCE_DIR}/src/project_specific_header
+#)
 
 list(APPEND USED_3DPARTY_LIBS
   ${base_LIB}
@@ -465,7 +605,7 @@ target_compile_options(${LIB_NAME} PRIVATE
   -fno-rtti)
 
 target_compile_definitions(${LIB_NAME} PRIVATE
-  ${flex_meta_plugin_PRIVATE_DEFINES}
+  ${flex_meta_demo_PRIVATE_DEFINES}
   # https://stackoverflow.com/a/30877725
   BOOST_SYSTEM_NO_DEPRECATED BOOST_ERROR_CODE_HEADER_ONLY
   IS_CXXCTP=1
@@ -474,7 +614,7 @@ target_compile_definitions(${LIB_NAME} PRIVATE
 )
 
 target_compile_definitions(${LIB_NAME} PUBLIC
-  ${flex_meta_plugin_PUBLIC_DEFINES}
+  ${flex_meta_demo_PUBLIC_DEFINES}
   ${CLING_DEFINITIONS}
 )
 
