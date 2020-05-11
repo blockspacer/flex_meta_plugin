@@ -21,15 +21,15 @@ from distutils.util import strtobool
 # package(),
 # package_info()
 
-class flex_meta_demo_conan_project(ConanFile):
-    name = "flex_meta_demo"
+class flex_meta_plugin_conan_project(ConanFile):
+    name = "flex_meta_plugin"
 
     version = "master"
     url = "https://CHANGE_ME"
     license = "MIT" # CHANGE_ME
     author = "CHANGE_ME <>"
 
-    description = "flex_meta_demo: C++ compile-time programming (serialization, reflection, code modification, enum to string, better enum, enum to json, extend or parse language, etc.)."
+    description = "flex_meta_plugin: C++ compile-time programming (serialization, reflection, code modification, enum to string, better enum, enum to json, extend or parse language, etc.)."
     topics = ('c++')
 
     options = {
@@ -113,8 +113,6 @@ class flex_meta_demo_conan_project(ConanFile):
         "openssl:shared=True",
         # flex_reflect_plugin
         "flex_reflect_plugin:shared=True",
-        # flex_meta_plugin
-        "flex_meta_plugin:shared=True",
         # chromium_base
         "chromium_base:use_alloc_shim=True",
         # chromium_tcmalloc
@@ -140,7 +138,7 @@ class flex_meta_demo_conan_project(ConanFile):
                        "scripts/*", "tools/*", "codegen/*", "assets/*", "conf/*",
                        "docs/*", "licenses/*", "patches/*", "resources/*",
                        "submodules/*", "thirdparty/*", "third-party/*",
-                       "third_party/*", "base/*", "build/*", "flex_meta_demo/*")
+                       "third_party/*", "base/*", "build/*", "flex_meta_plugin/*")
 
     #settings = "os", "compiler", "build_type", "arch"
     settings = "os_build", "os", "arch", "compiler", "build_type", "arch_build"
@@ -203,11 +201,7 @@ class flex_meta_demo_conan_project(ConanFile):
 
       self.requires("flextool/master@conan/stable")
 
-      self.requires("flex_support_headers/master@conan/stable")
-
       self.requires("flex_reflect_plugin/master@conan/stable")
-
-      self.requires("flex_meta_plugin/master@conan/stable")
 
     def _configure_cmake(self):
         cmake = CMake(self)
@@ -300,7 +294,7 @@ class flex_meta_demo_conan_project(ConanFile):
     # from the CMake install automatically.
     # For instance, you need to specify the lib directories, etc.
     def package_info(self):
-        #self.cpp_info.libs = ["flex_meta_demo"]
+        #self.cpp_info.libs = ["flex_meta_plugin"]
 
         self.cpp_info.includedirs = ["include"]
         self.cpp_info.libs = tools.collect_libs(self)
@@ -312,15 +306,15 @@ class flex_meta_demo_conan_project(ConanFile):
         for libpath in self.deps_cpp_info.lib_paths:
             self.env_info.LD_LIBRARY_PATH.append(libpath)
 
-        self.env_info.flex_meta_demo_ROOT = self.package_folder
-        #flex_meta_demo = "flex_meta_demo.dll" if self.settings.os_build == "Windows" else "flex_meta_demo.so"
-        #self.env_info.flex_meta_demo_LIB = os.path.normpath(os.path.join(self.package_folder, "lib", flex_meta_demo))
+        self.env_info.flex_meta_plugin_ROOT = self.package_folder
+        #flex_meta_plugin = "flex_meta_plugin.dll" if self.settings.os_build == "Windows" else "flex_meta_plugin.so"
+        #self.env_info.flex_meta_plugin_LIB = os.path.normpath(os.path.join(self.package_folder, "lib", flex_meta_plugin))
 
         #self.cpp_info.includedirs.append(os.getcwd())
         #self.cpp_info.includedirs.append(
-        #  os.path.join("base", "third_party", "flex_meta_demo"))
+        #  os.path.join("base", "third_party", "flex_meta_plugin"))
         #self.cpp_info.includedirs.append(
-        #  os.path.join("base", "third_party", "flex_meta_demo", "compat"))
+        #  os.path.join("base", "third_party", "flex_meta_plugin", "compat"))
 
         #if self.settings.os == "Linux":
         #  self.cpp_info.defines.append('HAVE_CONFIG_H=1')

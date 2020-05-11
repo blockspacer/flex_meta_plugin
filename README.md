@@ -19,6 +19,6 @@ GIT_SSL_NO_VERIFY=true \
       conan create . conan/stable \
       -s build_type=Debug -s cling_conan:build_type=Release \
       --profile clang \
-          -o flex_meta_demo:enable_clang_from_conan=False \
-          -e flex_meta_demo:enable_tests=True
+          -o flex_meta_plugin:enable_clang_from_conan=False \
+          -e flex_meta_plugin:enable_tests=True
 ```

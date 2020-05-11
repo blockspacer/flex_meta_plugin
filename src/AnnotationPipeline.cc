@@ -2,9 +2,6 @@
 
 #include "flexlib/core/errors/errors.hpp"
 
-//#include "ctp_scripts/1_utils/CXTPL_STD/CXTPL_STD.hpp"
-//#include "ctp_scripts/1_utils/CXXCTP_STD/CXXCTP_STD.hpp"
-
 #include <clang/Rewrite/Core/Rewriter.h>
 #include <clang/ASTMatchers/ASTMatchFinder.h>
 
@@ -256,8 +253,8 @@ class AnnotationPipeline
         base::Unretained(this));
   }
 
-  cxxctp_callback_result make_reflect(
-    const cxxctp_callback_args& callback_args)
+  clang_utils::SourceTransformResult make_reflect(
+    const clang_utils::SourceTransformOptions& callback_args)
   {
     DLOG(INFO) << "make_removefuncbody called...";
 
@@ -350,7 +347,7 @@ class AnnotationPipeline
       callback_args.rewriter.InsertText(locEnd, output,
         /*InsertAfter=*/true, /*IndentNewLines*/ false);
     }
-    return cxxctp_callback_result{nullptr};
+    return clang_utils::SourceTransformResult{nullptr};
   }
 
   bool unload() override

@@ -3,7 +3,7 @@
 # NOTE: preserve directory structure
 install(
   DIRECTORY
-    ${CMAKE_SOURCE_DIR}/include/flex_meta_demo
+    ${CMAKE_SOURCE_DIR}/include/flex_meta_plugin
   DESTINATION
     ${CMAKE_INSTALL_INCLUDEDIR}
   FILES_MATCHING
@@ -83,6 +83,6 @@ install(FILES
 )
 
 install(FILES
-  "${CMAKE_CURRENT_SOURCE_DIR}/conf/flex_meta_demo.conf" # source directory
+  "${CMAKE_CURRENT_SOURCE_DIR}/conf/flex_meta_plugin.conf" # source directory
   DESTINATION "${CMAKE_INSTALL_PREFIX}/lib" # target directory
 )
