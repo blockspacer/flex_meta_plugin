@@ -12,11 +12,14 @@
 #include <flexlib/matchers/annotation_matcher.hpp>
 #include <flexlib/options/ctp/options.hpp>
 #if defined(CLING_IS_ON)
-#include "flexlib/ClingInterpreterModule.hpp>
+#include "flexlib/ClingInterpreterModule.hpp"
 #endif // CLING_IS_ON
 
 #include <clang/Rewrite/Core/Rewriter.h>
 #include <clang/ASTMatchers/ASTMatchFinder.h>
+#include <clang/AST/RecursiveASTVisitor.h>
+#include <clang/AST/ASTContext.h>
+#include <clang/Lex/Preprocessor.h>
 
 #include <base/cpu.h>
 #include <base/bind.h>
@@ -83,17 +86,43 @@ static const bool isReflectable(clang::DeclaratorDecl* decl)
   return res;
 }
 
+
+static std::string dumpAccessSpecifier(clang::AccessSpecifier AS) {
+  switch (AS) {
+  case clang::AS_none:
+    break;
+  case clang::AS_public:
+    return "public";
+    break;
+  case clang::AS_protected:
+    return "protected";
+    break;
+  case clang::AS_private:
+    return "private";
+    break;
+  }
+  return "";
+}
+
 } // namespace
 
 Tooling::Tooling(
+  const ::plugin::ToolPlugin::Events::RegisterAnnotationMethods& event
 #if defined(CLING_IS_ON)
-  ::cling_utils::ClingInterpreter* clingInterpreter
+  , ::cling_utils::ClingInterpreter* clingInterpreter
 #endif // CLING_IS_ON
 ) : clingInterpreter_(clingInterpreter)
 {
   DCHECK(clingInterpreter_);
 
   DETACH_FROM_SEQUENCE(sequence_checker_);
+
+  DCHECK(event.sourceTransformPipeline);
+  ::clang_utils::SourceTransformPipeline& sourceTransformPipeline
+    = *event.sourceTransformPipeline;
+
+  sourceTransformRules_
+    = &sourceTransformPipeline.sourceTransformRules;
 }
 
 Tooling::~Tooling()
@@ -155,7 +184,8 @@ clang_utils::SourceTransformResult
                     = llvm::dyn_cast<clang::AccessSpecDecl>(decl)) {
         //isSignal = AccessSpecDecl(spec);
         VLOG(9)
-          << ("is CXXMethodDecl %s\n", spec->getNameAsString().c_str());
+          << "is CXXMethodDecl"
+          << dumpAccessSpecifier(spec->getAccess()).c_str();
       } else if (clang::FieldDecl *field
                     = llvm::dyn_cast<clang::FieldDecl>(decl)) {
         VLOG(9)

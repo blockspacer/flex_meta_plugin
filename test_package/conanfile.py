@@ -69,6 +69,7 @@ class TestPackageConan(ConanFile):
             flextool_cmd = "flextool" \
               " --outdir ." \
               " --indir ." \
+              " --vmodule=*=100 --enable-logging=stderr --log-level=100" \
               " --load_plugin {}" \
               " --load_plugin {}" \
               " --extra-arg=-I{}" \

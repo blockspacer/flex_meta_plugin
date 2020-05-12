@@ -12,7 +12,7 @@
 #include <flexlib/matchers/annotation_matcher.hpp>
 #include <flexlib/options/ctp/options.hpp>
 #if defined(CLING_IS_ON)
-#include "flexlib/ClingInterpreterModule.hpp>
+#include "flexlib/ClingInterpreterModule.hpp"
 #endif // CLING_IS_ON
 
 #include <clang/Rewrite/Core/Rewriter.h>
