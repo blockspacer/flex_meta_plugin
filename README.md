@@ -1,6 +1,14 @@
 # About
 
-C++ lib
+Plugin for [https://github.com/blockspacer/flextool](https://github.com/blockspacer/flextool)
+
+Plugin provides rules for source code transformation and generation.
+
+See for details [https://blockspacer.github.io/flex_docs/plugins/](https://blockspacer.github.io/flex_docs/plugins/)
+
+## Before installation
+
+- [installation guide](https://blockspacer.github.io/flex_docs/download/)
 
 ## Installation
 

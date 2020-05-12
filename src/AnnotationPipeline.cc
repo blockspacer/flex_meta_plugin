@@ -62,33 +62,38 @@ static const bool isReflectable(clang::DeclaratorDecl* decl) {
   bool res = false;
   if ( auto annotate = decl->getAttr<clang::AnnotateAttr>() )
   {
-    std:: string code =
+    std::string annotationCode =
       annotate->getAnnotation().str();
+    VLOG(9)
+      << "annotation code: "
+      << annotationCode;
     const bool startsWithGen =
-      code.rfind(kGenAttrToken, 0) == 0;
-    code.erase(0, kGenAttrToken.size());
+      annotationCode.rfind(kGenAttrToken, 0) == 0;
+    annotationCode.erase(0, kGenAttrToken.size());
     if (startsWithGen) {
-      DLOG(INFO) << "isReflectable code() " << code;
       std::string delimiter = ";";
       size_t pos = 0;
       std::string token;
-      while ((pos = code.find(delimiter)) != std::string::npos) {
-        token = code.substr(0, pos);
-        DLOG(INFO) << "isReflectable token " << token;
+      while ((pos = annotationCode.find(delimiter)) != std::string::npos) {
+        token = annotationCode.substr(0, pos);
+        VLOG(9)
+          << "isReflectable token "
+          << token;
         if(token == kAttrReflectableFlag) {
           res = true;
           break;
         }
-        code.erase(0, pos + delimiter.length());
+        annotationCode.erase(0, pos + delimiter.length());
       }
-      if(!code.empty()
-         && code == kAttrReflectableFlag) {
+      if(!annotationCode.empty()
+         && annotationCode == kAttrReflectableFlag) {
         res = true;
       }
     }
   }
 
-  DLOG(INFO) << "isReflectable attr() "
+  VLOG(9)
+    << "isReflectable attr() "
     << decl->getNameAsString()
     << "is " << res;
 
@@ -254,12 +259,17 @@ class AnnotationPipeline
   }
 
   clang_utils::SourceTransformResult make_reflect(
-    const clang_utils::SourceTransformOptions& callback_args)
+    const clang_utils::SourceTransformOptions& sourceTransformOptions)
   {
-    DLOG(INFO) << "make_removefuncbody called...";
+    VLOG(9)
+      << "make_removefuncbody called...";
 
     std::string indent = "  ";
     std::string output{};
+
+    /// \note For simplisity we didn't use template engine.
+    /// You can integrate with any template engine
+    /// to avoid code like `output.append("\n");`
     output.append("\n");
     output.append(indent
                     + "public:");
@@ -269,10 +279,17 @@ class AnnotationPipeline
     std::map<std::string, std::string> fields;
     std::map<std::string, std::string> methods;
 
+    // used annotation attribute
+    // must point to
+    // __attribute__((annotate("{gen};{funccall};make_reflect;...")))
     clang::CXXRecordDecl const *record =
-        callback_args.matchResult.Nodes.getNodeAs<clang::CXXRecordDecl>("bind_gen");
+        sourceTransformOptions.matchResult.Nodes
+        .getNodeAs<clang::CXXRecordDecl>("bind_gen");
+
     if (record) {
-      DLOG(INFO) << "reflect is record " << record->getNameAsString().c_str();
+      VLOG(9)
+        << "record name is "
+        << record->getNameAsString().c_str();
 
       // see https://github.com/Papierkorb/bindgen/blob/b55578e517a308778f5a510de02af499b353f15d/clang/src/record_match_handler.cpp
       for (clang::Decl *decl : record->decls()) {
@@ -291,13 +308,15 @@ class AnnotationPipeline
         } else if (clang::AccessSpecDecl *spec
                       = llvm::dyn_cast<clang::AccessSpecDecl>(decl)) {
           //isSignal = AccessSpecDecl(spec);
-          //DLOG(INFO) << ("is CXXMethodDecl %s\n", spec->getNameAsString().c_str());
+          VLOG(9)
+            << ("is CXXMethodDecl %s\n", spec->getNameAsString().c_str());
         } else if (clang::FieldDecl *field
                       = llvm::dyn_cast<clang::FieldDecl>(decl)) {
-          //runOnField(field);
-          DLOG(INFO) << "reflect is FieldDecl" <<
-            field->getType().getUnqualifiedType().getAsString().c_str() << " " <<
-            field->getNameAsString().c_str();
+          VLOG(9)
+            << "field type is"
+            << field->getType().getUnqualifiedType().getAsString().c_str()
+            << " and field name is "
+            << field->getNameAsString().c_str();
           if(isReflectable(field)) {
             fields[field->getNameAsString()] =
               field->getType().getUnqualifiedType().getAsString().c_str();
@@ -344,7 +363,9 @@ class AnnotationPipeline
                       "};");
       output.append("\n");
       auto locEnd = record->getLocEnd();
-      callback_args.rewriter.InsertText(locEnd, output,
+
+      // add new field with reflection data at the end of the C++ record
+      sourceTransformOptions.rewriter.InsertText(locEnd, output,
         /*InsertAfter=*/true, /*IndentNewLines*/ false);
     }
     return clang_utils::SourceTransformResult{nullptr};
