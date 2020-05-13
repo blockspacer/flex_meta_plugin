@@ -44,22 +44,22 @@ static const std::string kVersionCommand = "/version";
 
 } // namespace
 
-EventHandler::EventHandler()
+FlexMetaEventHandler::FlexMetaEventHandler()
 {
   DETACH_FROM_SEQUENCE(sequence_checker_);
 }
 
-EventHandler::~EventHandler()
+FlexMetaEventHandler::~FlexMetaEventHandler()
 {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 }
 
-void EventHandler::StringCommand(
+void FlexMetaEventHandler::StringCommand(
   const ::plugin::ToolPlugin::Events::StringCommand& event)
 {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   TRACE_EVENT0("toplevel",
-               "plugin::EventHandler::handle_event(StringCommand)");
+               "plugin::FlexMetaEventHandler::handle_event(StringCommand)");
 
   if(event.split_parts.size() == 1)
   {
@@ -76,12 +76,12 @@ void EventHandler::StringCommand(
   }
 }
 
-void EventHandler::RegisterAnnotationMethods(
+void FlexMetaEventHandler::RegisterAnnotationMethods(
   const ::plugin::ToolPlugin::Events::RegisterAnnotationMethods& event)
 {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   TRACE_EVENT0("toplevel",
-               "plugin::EventHandler::handle_event(RegisterAnnotationMethods)");
+               "plugin::FlexMetaEventHandler::handle_event(RegisterAnnotationMethods)");
 
 #if defined(CLING_IS_ON)
   DCHECK(clingInterpreter_);
@@ -102,6 +102,9 @@ void EventHandler::RegisterAnnotationMethods(
     = sourceTransformPipeline.sourceTransformRules;
 
   {
+    VLOG(9)
+      << "registered source transform rule:"
+         " make_reflect";
     CHECK(tooling_);
     sourceTransformRules["make_reflect"] =
       base::BindRepeating(
@@ -111,12 +114,12 @@ void EventHandler::RegisterAnnotationMethods(
 }
 
 #if defined(CLING_IS_ON)
-void EventHandler::RegisterClingInterpreter(
+void FlexMetaEventHandler::RegisterClingInterpreter(
   const ::plugin::ToolPlugin::Events::RegisterClingInterpreter& event)
 {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
   TRACE_EVENT0("toplevel",
-               "plugin::EventHandler::handle_event(RegisterClingInterpreter)");
+               "plugin::FlexMetaEventHandler::handle_event(RegisterClingInterpreter)");
 
   DCHECK(event.clingInterpreter);
   clingInterpreter_ = event.clingInterpreter;

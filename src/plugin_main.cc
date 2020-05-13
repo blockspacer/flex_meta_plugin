@@ -90,18 +90,18 @@ class FlexMeta
     event_dispatcher.sink<
       ::plugin::ToolPlugin::Events::StringCommand>()
         .disconnect<
-          &EventHandler::StringCommand>(&eventHandler_);
+          &FlexMetaEventHandler::StringCommand>(&eventHandler_);
 
     event_dispatcher.sink<
       ::plugin::ToolPlugin::Events::RegisterAnnotationMethods>()
         .disconnect<
-          &EventHandler::RegisterAnnotationMethods>(&eventHandler_);
+          &FlexMetaEventHandler::RegisterAnnotationMethods>(&eventHandler_);
 
 #if defined(CLING_IS_ON)
     event_dispatcher.sink<
       ::plugin::ToolPlugin::Events::RegisterClingInterpreter>()
         .disconnect<
-          &EventHandler::RegisterClingInterpreter>(&eventHandler_);
+          &FlexMetaEventHandler::RegisterClingInterpreter>(&eventHandler_);
 #endif // CLING_IS_ON
   }
 
@@ -115,18 +115,18 @@ class FlexMeta
     event_dispatcher.sink<
       ::plugin::ToolPlugin::Events::StringCommand>()
         .connect<
-          &EventHandler::StringCommand>(&eventHandler_);
+          &FlexMetaEventHandler::StringCommand>(&eventHandler_);
 
     event_dispatcher.sink<
       ::plugin::ToolPlugin::Events::RegisterAnnotationMethods>()
         .connect<
-          &EventHandler::RegisterAnnotationMethods>(&eventHandler_);
+          &FlexMetaEventHandler::RegisterAnnotationMethods>(&eventHandler_);
 
 #if defined(CLING_IS_ON)
     event_dispatcher.sink<
       ::plugin::ToolPlugin::Events::RegisterClingInterpreter>()
         .connect<
-          &EventHandler::RegisterClingInterpreter>(&eventHandler_);
+          &FlexMetaEventHandler::RegisterClingInterpreter>(&eventHandler_);
 #endif // CLING_IS_ON
   }
 
@@ -147,7 +147,7 @@ class FlexMeta
   }
 
 private:
-  EventHandler eventHandler_{};
+  FlexMetaEventHandler eventHandler_{};
 
   DISALLOW_COPY_AND_ASSIGN(FlexMeta);
 };
