@@ -106,7 +106,7 @@ static std::string dumpAccessSpecifier(clang::AccessSpecifier AS) {
 
 } // namespace
 
-Tooling::Tooling(
+MetaTooling::MetaTooling(
   const ::plugin::ToolPlugin::Events::RegisterAnnotationMethods& event
 #if defined(CLING_IS_ON)
   , ::cling_utils::ClingInterpreter* clingInterpreter
@@ -125,13 +125,13 @@ Tooling::Tooling(
     = &sourceTransformPipeline.sourceTransformRules;
 }
 
-Tooling::~Tooling()
+MetaTooling::~MetaTooling()
 {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
 }
 
 clang_utils::SourceTransformResult
-  Tooling::make_reflect(
+  MetaTooling::make_reflect(
     const clang_utils::SourceTransformOptions& sourceTransformOptions)
 {
   DCHECK_CALLED_ON_VALID_SEQUENCE(sequence_checker_);
