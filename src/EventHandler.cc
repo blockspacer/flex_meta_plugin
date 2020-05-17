@@ -87,7 +87,7 @@ void FlexMetaEventHandler::RegisterAnnotationMethods(
   DCHECK(clingInterpreter_);
 #endif // CLING_IS_ON
 
-  tooling_ = std::make_unique<Tooling>(
+  tooling_ = std::make_unique<MetaTooling>(
     event
 #if defined(CLING_IS_ON)
     , clingInterpreter_
@@ -108,7 +108,7 @@ void FlexMetaEventHandler::RegisterAnnotationMethods(
     CHECK(tooling_);
     sourceTransformRules["make_reflect"] =
       base::BindRepeating(
-        &Tooling::make_reflect
+        &MetaTooling::make_reflect
         , base::Unretained(tooling_.get()));
   }
 }
