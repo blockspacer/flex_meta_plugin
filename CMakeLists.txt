@@ -13,16 +13,22 @@ set(LIB_NAME ${PROJECT_NAME})
 
 option(ENABLE_TESTS "Enable tests" OFF)
 
-set(BUILD_SHARED_LIBS
+# Hack to depend NOT on CONAN_PKG::libname, but on libname directly
+# See for details
+# https://docs.conan.io/en/latest/developing_packages/workspaces.html
+set(LOCAL_BUILD FALSE CACHE BOOL "LOCAL_BUILD")
+message(STATUS "LOCAL_BUILD=${LOCAL_BUILD}")
+
+set(${PROJECT_NAME}_BUILD_SHARED_LIBS
   TRUE CACHE BOOL
   "Use .so/.dll")
 
-if(BUILD_SHARED_LIBS)
+if(${PROJECT_NAME}_BUILD_SHARED_LIBS)
   set(CORE_LIB_TYPE SHARED)
 else()
   set(CORE_LIB_TYPE STATIC)
   message(FATAL_ERROR "ONLY SHARED PLUGINS SUPPORTED FOR NOW")
-endif(BUILD_SHARED_LIBS)
+endif(${PROJECT_NAME}_BUILD_SHARED_LIBS)
 
 set(ENABLE_CLING TRUE CACHE BOOL "ENABLE_CLING")
 message(STATUS "ENABLE_CLING=${ENABLE_CLING}")
@@ -108,8 +114,7 @@ message(STATUS "${FetchContent_conan_auto_install}_SOURCE_DIR = ${${FetchContent
 message(STATUS "${FetchContent_conan_auto_install}_BINARY_DIR = ${${FetchContent_conan_auto_install}_BINARY_DIR}")
 include(${${FetchContent_conan_auto_install}_SOURCE_DIR}/conan-auto-install.cmake)
 option(CONAN_AUTO_INSTALL "Let CMake call conan install automatically"
-  #OFF # disable by default cause llvm requires long build with CONAN_LLVM_SINGLE_THREAD_BUILD=1
-  ON
+  OFF
 )
 if (CONAN_AUTO_INSTALL)
   set(CONAN_PROFILE
@@ -147,7 +152,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules")
 
 # Generate clang compilation database
 # see https://stackoverflow.com/a/31086619/10904212
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+#set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 find_package(cmake_platform_detection REQUIRED)
 run_cmake_platform_detection()
@@ -232,11 +237,11 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/)
 set(flex_meta_plugin_include_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include/flex_meta_plugin")
 set(flex_meta_plugin_src_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src")
 
-include(cmake/PlatformChecks)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/PlatformChecks.cmake)
 
-include(cmake/CommonOptions)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/CommonOptions.cmake)
 
-include(cmake/ProjectFiles)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/ProjectFiles.cmake)
 
 add_library(${LIB_NAME}-test-includes INTERFACE)
 
@@ -268,9 +273,13 @@ list(APPEND USED_3DPARTY_LIBS
 if(NOT TARGET CONAN_PKG::flexlib)
   message(FATAL_ERROR "Use flexlib from conan")
 endif()
+set(flexlib CONAN_PKG::flexlib)
+if(LOCAL_BUILD)
+  set(flexlib flexlib)
+endif(LOCAL_BUILD)
 
 list(APPEND USED_3DPARTY_LIBS
-  CONAN_PKG::flexlib
+  ${flexlib}
   CONAN_PKG::basis
   CONAN_PKG::clang_folly_conan
   CONAN_PKG::boost
@@ -326,6 +335,10 @@ target_link_libraries(${LIB_NAME} PUBLIC#PRIVATE
   ${USED_SYSTEM_LIBS}
 )
 
+target_link_libraries(${LIB_NAME} PRIVATE
+  CONAN_PKG::entt
+)
+
 set(DEBUG_LIBRARY_SUFFIX "")
 set_target_properties(${LIB_NAME}
   PROPERTIES
@@ -350,83 +363,6 @@ if(ENABLE_CLING)
   list(APPEND CLING_DEFINITIONS CLING_IS_ON=1)
   target_link_libraries(${LIB_NAME} PUBLIC#PRIVATE
     CONAN_PKG::cling_conan
-    #-lLLVMOption
-    #-lclangTooling
-    #-lclangFrontendTool
-    #-lclangFrontend
-    #-lclangDriver
-    #-lclangSerialization
-    #-lclangCodeGen
-    #-lclangParse
-    #-lclangSema
-    #-lclangStaticAnalyzerFrontend
-    #-lclangStaticAnalyzerCheckers
-    #-lclangStaticAnalyzerCore
-    #-lclangAnalysis
-    #-lclangARCMigrate
-    #-lclangRewrite
-    #-lclangRewriteFrontend
-    #-lclangEdit
-    #-lclangAST
-    #-lclangLex
-    #-lclangBasic
-    #-lclang
-    #-lcling
-    #-lclingInterpreter
-    #
-    #clangARCMigrate
-    #clangAnalysis
-    #clangAST
-    #clangASTMatchers
-    #clangBasic
-    #clangCodeGen
-    #clangDriver
-    #clangDynamicASTMatchers
-    #clangEdit
-    #clangFormat
-    #clangFrontend
-    #clangFrontendTool
-    #clangIndex
-    #clangLex
-    #clangParse
-    #clangRewrite
-    #clangRewriteFrontend
-    #clangSema
-    #clangSerialization
-    #clangStaticAnalyzerCheckers
-    #clangStaticAnalyzerCore
-    #clangStaticAnalyzerFrontend
-    #clangTooling
-    #clangToolingCore
-    #clangToolingRefactor
-    #clangStaticAnalyzerCore
-    #clangDynamicASTMatchers
-    #clangCodeGen
-    #clangFrontendTool
-    #clang.so
-    #clangEdit
-    #clangRewriteFrontend
-    #clangDriver
-    #clangSema
-    #clangASTMatchers
-    #clangSerialization
-    #clangBasic
-    #clangAST
-    #clangTooling
-    #clangStaticAnalyzerFrontend
-    #clangFormat
-    #clangToolingRefactor
-    #clangLex
-    #clangFrontend
-    #clangRewrite
-    #clangToolingCore
-    #clangIndex
-    #clangAnalysis
-    #clangParse
-    #clangStaticAnalyzerCheckers
-    #clangARCMigrate
-    #cling
-    #clingInterpreter
   )
 
   get_target_property (cling_conan_IMPORTED_LOCATION CONAN_PKG::cling_conan INTERFACE_INCLUDE_DIRECTORIES)
@@ -476,7 +412,23 @@ target_compile_definitions(${LIB_NAME} PUBLIC
 )
 
 # install and export steps
-include(cmake/Exports)
+include(${CMAKE_CURRENT_SOURCE_DIR}/cmake/Exports.cmake)
+
+if(LOCAL_BUILD)
+  # for builds with conan workspace
+  execute_process(
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/conf/${LIB_NAME}.conf
+            ${CMAKE_BINARY_DIR}/${LIB_NAME}.conf
+  )
+endif(LOCAL_BUILD)
+
+# for builds without conan
+execute_process(
+  COMMAND ${CMAKE_COMMAND} -E copy_if_different
+          ${CMAKE_CURRENT_SOURCE_DIR}/conf/${LIB_NAME}.conf
+          ${CMAKE_CURRENT_BINARY_DIR}/${LIB_NAME}.conf
+)
 
 if(ENABLE_TESTS)
   add_subdirectory( tests )
