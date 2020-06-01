@@ -14,8 +14,41 @@ find_package(flextool)
 
 list(REMOVE_AT CMAKE_MODULE_PATH -1)
 
-# uses Config.cmake or a -config.cmake file
-# see https://gitlab.kitware.com/cmake/community/wikis/doc/tutorials/How-to-create-a-ProjectConfig.cmake-file
-# BELOW MUST BE EQUAL TO find_package(... CONFIG REQUIRED)
-# NOTE: find_package(CONFIG) not supported with EMSCRIPTEN, so use include()
-include(${CMAKE_CURRENT_LIST_DIR}/cmake/flex_meta_plugin-config.cmake)
+if(NOT TARGET CONAN_PKG::flex_meta_plugin)
+  message(FATAL_ERROR "Use flex_meta_plugin from conan")
+endif()
+set(flex_meta_plugin_LIB
+  CONAN_PKG::flex_meta_plugin
+)
+set(flex_meta_plugin_FILE
+  ${CONAN_FLEX_META_PLUGIN_ROOT}/lib/flex_meta_plugin${CMAKE_SHARED_LIBRARY_SUFFIX}
+)
+# conan package has '/include' dir
+set(flex_meta_plugin_HEADER_DIR
+  ${CONAN_FLEX_META_PLUGIN_ROOT}/include
+)
+if(flex_meta_plugin_LOCAL_BUILD)
+  # name of created target
+  set(flex_meta_plugin_LIB
+    flex_meta_plugin
+  )
+  # no '/include' dir on local build
+  set(flex_meta_plugin_HEADER_DIR
+    ${CONAN_FLEX_META_PLUGIN_ROOT}
+  )
+  # plugin file
+  get_property(flex_meta_plugin_LIBRARY_OUTPUT_DIRECTORY
+    TARGET ${flex_meta_plugin_LIB}
+    PROPERTY LIBRARY_OUTPUT_DIRECTORY)
+  message(STATUS "flex_meta_plugin_LIBRARY_OUTPUT_DIRECTORY == ${flex_meta_plugin_LIBRARY_OUTPUT_DIRECTORY}")
+  set(flex_meta_plugin_FILE
+    ${flex_meta_plugin_LIBRARY_OUTPUT_DIRECTORY}/flex_meta_plugin${CMAKE_SHARED_LIBRARY_SUFFIX}
+  )
+else()
+  # uses Config.cmake or a -config.cmake file
+  # see https://gitlab.kitware.com/cmake/community/wikis/doc/tutorials/How-to-create-a-ProjectConfig.cmake-file
+  # BELOW MUST BE EQUAL TO find_package(... CONFIG REQUIRED)
+  # NOTE: find_package(CONFIG) not supported with EMSCRIPTEN, so use include()
+  include(${CMAKE_CURRENT_LIST_DIR}/cmake/flex_meta_plugin-config.cmake)
+endif(flex_meta_plugin_LOCAL_BUILD)
+message(STATUS "flex_meta_plugin_HEADER_DIR=${flex_meta_plugin_HEADER_DIR}")
