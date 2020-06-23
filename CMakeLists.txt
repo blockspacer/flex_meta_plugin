@@ -184,7 +184,6 @@ if(NOT TARGET CONAN_PKG::clang_folly_conan)
   message(FATAL_ERROR "Use clang_folly_conan from conan")
 endif()
 
-
 if(NOT TARGET CONAN_PKG::chromium_build_util)
   message(FATAL_ERROR "Use chromium_build_util from conan")
 endif()
