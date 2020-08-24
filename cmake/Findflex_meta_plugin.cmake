@@ -27,7 +27,7 @@ set(flex_meta_plugin_FILE
 set(flex_meta_plugin_HEADER_DIR
   ${CONAN_FLEX_META_PLUGIN_ROOT}/include
 )
-if(flex_meta_plugin_LOCAL_BUILD)
+if(TARGET flex_meta_plugin)
   # name of created target
   set(flex_meta_plugin_LIB
     flex_meta_plugin
@@ -44,11 +44,14 @@ if(flex_meta_plugin_LOCAL_BUILD)
   set(flex_meta_plugin_FILE
     ${flex_meta_plugin_LIBRARY_OUTPUT_DIRECTORY}/flex_meta_plugin${CMAKE_SHARED_LIBRARY_SUFFIX}
   )
-else()
+endif()
+
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/cmake/flex_meta_plugin-config.cmake")
   # uses Config.cmake or a -config.cmake file
   # see https://gitlab.kitware.com/cmake/community/wikis/doc/tutorials/How-to-create-a-ProjectConfig.cmake-file
   # BELOW MUST BE EQUAL TO find_package(... CONFIG REQUIRED)
   # NOTE: find_package(CONFIG) not supported with EMSCRIPTEN, so use include()
   include(${CMAKE_CURRENT_LIST_DIR}/cmake/flex_meta_plugin-config.cmake)
-endif(flex_meta_plugin_LOCAL_BUILD)
+endif()
+
 message(STATUS "flex_meta_plugin_HEADER_DIR=${flex_meta_plugin_HEADER_DIR}")
