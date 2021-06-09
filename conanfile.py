@@ -21,12 +21,22 @@ from distutils.util import strtobool
 # package(),
 # package_info()
 
+# Users locally they get the 1.0.0 version,
+# without defining any env-var at all,
+# and CI servers will append the build number.
+# USAGE
+# version = get_version("1.0.0")
+# BUILD_NUMBER=-pre1+build2 conan export-pkg . my_channel/release
+def get_version(version):
+    bn = os.getenv("BUILD_NUMBER")
+    return (version + bn) if bn else version
+
 conan_build_helper = python_requires("conan_build_helper/[~=0.0]@conan/stable")
 
 class flex_meta_plugin_conan_project(conan_build_helper.CMakePackage):
     name = "flex_meta_plugin"
 
-    version = "master"
+    version = get_version("master")
     url = "https://CHANGE_ME"
     license = "MIT" # CHANGE_ME
     author = "CHANGE_ME <>"
@@ -129,10 +139,6 @@ class flex_meta_plugin_conan_project(conan_build_helper.CMakePackage):
         "openssl:shared=True",
         # flex_reflect_plugin
         "flex_reflect_plugin:shared=True",
-        # chromium_base
-        "chromium_base:use_alloc_shim=True",
-        # chromium_tcmalloc
-        "chromium_tcmalloc:use_alloc_shim=True",
     )
 
     # Custom attributes for Bincrafters recipe conventions
@@ -187,7 +193,7 @@ class flex_meta_plugin_conan_project(conan_build_helper.CMakePackage):
         self.requires("clang_ast/6.0.1@Manu343726/testing")
         self.requires("llvm/6.0.1@Manu343726/testing")
       else:
-        self.requires("cling_conan/master@conan/stable")
+        self.requires("cling_conan/v0.9@conan/stable")
 
       self.requires("chromium_base/master@conan/stable")
 
@@ -243,10 +249,13 @@ class flex_meta_plugin_conan_project(conan_build_helper.CMakePackage):
         self.copy(pattern="LICENSE", dst="licenses", src=self._source_subfolder)
         cmake = self._configure_cmake()
         cmake.install()
-        # Local build
-        # see https://docs.conan.io/en/latest/developing_packages/editable_packages.html
-        if not self.in_local_cache:
-            self.copy("conanfile.py", dst=".", keep_path=False)
+
+        self.copy_conanfile_for_editable_package(".")
+
+        self.rmdir_if_packaged('.git')
+        self.rmdir_if_packaged('tests')
+        self.rmdir_if_packaged('lib/tests')
+        self.rmdir_if_packaged('lib/pkgconfig')
 
     def build(self):
         cmake = self._configure_cmake()
